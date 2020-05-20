@@ -132,6 +132,10 @@ void DiffuseAreaLight::Pdf_Le(const Ray &ray, const Normal3f &n, Float *pdfPos,
                        : CosineHemispherePdf(Dot(n, ray.d));
 }
 
+Bounds3f DiffuseAreaLight::WorldBound() const {
+  return shape->WorldBound();
+}
+
 std::shared_ptr<AreaLight> CreateDiffuseAreaLight(
     const Transform &light2world, const Medium *medium,
     const ParamSet &paramSet, const std::shared_ptr<Shape> &shape) {

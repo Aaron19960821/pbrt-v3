@@ -77,6 +77,10 @@ void PointLight::Pdf_Le(const Ray &, const Normal3f &, Float *pdfPos,
     *pdfDir = UniformSpherePdf();
 }
 
+Bounds3f PointLight::WorldBound() const {
+  return Bounds3f(pLight, pLight);
+}
+
 std::shared_ptr<PointLight> CreatePointLight(const Transform &light2world,
                                              const Medium *medium,
                                              const ParamSet &paramSet) {

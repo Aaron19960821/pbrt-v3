@@ -101,6 +101,10 @@ void SpotLight::Pdf_Le(const Ray &ray, const Normal3f &, Float *pdfPos,
                   : 0;
 }
 
+Bounds3f SpotLight::WorldBound() const {
+  return Bounds3f(pLight, pLight);
+}
+
 std::shared_ptr<SpotLight> CreateSpotLight(const Transform &l2w,
                                            const Medium *medium,
                                            const ParamSet &paramSet) {

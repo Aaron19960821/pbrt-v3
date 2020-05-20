@@ -20,6 +20,9 @@
 
 namespace pbrt {
 
+struct LightInfo;
+struct LightTreeBuildNode;
+
 class LightTree {
   public:
     enum class SplitMethod {
@@ -35,7 +38,12 @@ class LightTree {
     ~LightTree();
 
   private:
-    std::vector<std::shared_ptr<Light>> _light;
+    LightTreeBuildNode* recursiveBuild(MemoryArena& arena, std::vector<LightInfo>&,
+        int start, int end, int* totalNodes, 
+        std::vector<std::shared_ptr<Light>>&);
+
+  private:
+    std::vector<std::shared_ptr<Light>> _lights;
     const int _maxLightsPerNode;
     const SplitMethod _splitMethod;
 };
