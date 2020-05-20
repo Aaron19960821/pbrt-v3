@@ -10,6 +10,7 @@
 #include "accelerators/lighttree.h"
 
 #include "paramset.h"
+#include "stats.h"
 
 namespace pbrt {
 
@@ -17,7 +18,18 @@ LightTree::LightTree(std::vector<std::shared_ptr<Light>> lights,
     int maxLightsPerNode, 
     SplitMethod splitMethod):_light(std::move(lights)),
                              _maxLightsPerNode(maxLightsPerNode),
-                             _splitMethod(splitMethod) {}
+                             _splitMethod(splitMethod) {
+    ProfilePhase _(Prof::LightTreeConstruction);
+
+    // Check if there are ligths;
+    if (_light.empty()) {
+      Warning("LightTree::LightTree(): No light found.");
+      return;
+    }
+}
+
+LightTree::~LightTree() {
+}
 
 std::shared_ptr<LightTree> CreateLightTree(
     std::vector<std::shared_ptr<Light>> lights,
@@ -25,14 +37,14 @@ std::shared_ptr<LightTree> CreateLightTree(
   LightTree::SplitMethod splitMethod;
   std::string splitMethodName = paramset.FindOneString("splitmethod", "sah");
   if (splitMethodName == "sah") {
-    splitMethod = LightTree::SplitMethod::SAOH;
+    splitMethod = LightTree::SplitMethod::SAH;
   } else if (splitMethodName == "middle") {
     splitMethod = LightTree::SplitMethod::Middle;
   } else if (splitMethodName == "equal") {
     splitMethod = LightTree::SplitMethod::EqualCounts;
   } else {
     Warning("LightTree split method unknown. Using sah instead.");
-    splitMethod = LightTree::SplitMethod::SAOH;
+    splitMethod = LightTree::SplitMethod::SAH;
   }
 
   int maxLightsPerNode = paramset.FindOneInt("maxlightspernode", 4);

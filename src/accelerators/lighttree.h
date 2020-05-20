@@ -25,13 +25,13 @@ class LightTree {
     enum class SplitMethod {
       Middle,
       EqualCounts,
-      SAOH
+      SAH
     };
 
   public:
     LightTree(std::vector<std::shared_ptr<Light>> lights,
         int maxLightsPerNode = 1,
-        SplitMethod splitMethod = SplitMethod::SAOH);
+        SplitMethod splitMethod = SplitMethod::SAH);
     ~LightTree();
 
   private:
