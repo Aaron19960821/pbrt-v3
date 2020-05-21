@@ -38,12 +38,15 @@ class LightTree {
         SplitMethod splitMethod = SplitMethod::SAH);
     ~LightTree();
 
+    void sample(int curOffset, Float u, int& lightIndex, Float& pdf) const;
+    std::shared_ptr<Light> getLightByIndex(int index) const;
+
   private:
     LightTreeBuildNode* recursiveBuild(MemoryArena& arena, std::vector<LightInfo>&,
         int start, int end, int* totalNodes, 
         std::vector<std::shared_ptr<Light>>&);
 
-    int flattenTree(LightTreeBuildNode* node, int* offset, 
+    int flattenTree(LightTreeBuildNode* node, int& offset, 
         std::vector<std::shared_ptr<Light>>&);
 
   private:

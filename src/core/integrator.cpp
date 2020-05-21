@@ -87,18 +87,23 @@ Spectrum UniformSampleOneLight(const Interaction &it, const Scene &scene,
                                bool handleMedia, const Distribution1D *lightDistrib) {
     ProfilePhase p(Prof::DirectLighting);
     // Randomly choose a single light to sample, _light_
-    int nLights = int(scene.lights.size());
-    if (nLights == 0) return Spectrum(0.f);
-    int lightNum;
+//    int nLights = int(scene.lights.size());
+//    if (nLights == 0) return Spectrum(0.f);
+//    int lightNum;
+//    Float lightPdf;
+//    if (lightDistrib) {
+//        lightNum = lightDistrib->SampleDiscrete(sampler.Get1D(), &lightPdf);
+//        if (lightPdf == 0) return Spectrum(0.f);
+//    } else {
+//        lightNum = std::min((int)(sampler.Get1D() * nLights), nLights - 1);
+//        lightPdf = Float(1) / nLights;
+//    }
+//    const std::shared_ptr<Light> &light = scene.lights[lightNum];
+
+    int index;
     Float lightPdf;
-    if (lightDistrib) {
-        lightNum = lightDistrib->SampleDiscrete(sampler.Get1D(), &lightPdf);
-        if (lightPdf == 0) return Spectrum(0.f);
-    } else {
-        lightNum = std::min((int)(sampler.Get1D() * nLights), nLights - 1);
-        lightPdf = Float(1) / nLights;
-    }
-    const std::shared_ptr<Light> &light = scene.lights[lightNum];
+    scene.lightTree->sample(0, sampler.Get1D(), index, lightPdf);
+    std::shared_ptr<Light> light = scene.lightTree->getLightByIndex(index);
     Point2f uLight = sampler.Get2D();
     Point2f uScattering = sampler.Get2D();
     return EstimateDirect(it, uScattering, *light, uLight,

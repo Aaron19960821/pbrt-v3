@@ -69,7 +69,7 @@ struct LinearLightTreeNode {
   int nLight;
 
   bool isLeaf() const {
-    return splitAxis;
+    return splitAxis < 0;
   }
 };
 
@@ -94,6 +94,8 @@ LightTree::LightTree(std::vector<std::shared_ptr<Light>> lights,
             _lights[i]->Power().y()));
     }
 
+    std::cout << "all information got." << std::endl; 
+
     // Build light tree
     MemoryArena memory(1024*1024);
     int totalNodes = 0;
@@ -103,8 +105,13 @@ LightTree::LightTree(std::vector<std::shared_ptr<Light>> lights,
     LightTreeBuildNode* root = recursiveBuild(memory, lightsInfo, 0, lightsInfo.size(), 
         &totalNodes, orderedLights);
 
+    std::cout << "build nodes got: " << totalNodes << std::endl; 
     _nodes = AllocAligned<LinearLightTreeNode>(totalNodes);
-    int offset = 0;
+    int off = 0;
+    flattenTree(root, off, orderedLights);
+    _lights = orderedLights;
+
+    std::cout << "flattened" << std::endl;
 }
 
 LightTree::~LightTree() {
@@ -174,16 +181,17 @@ LightTreeBuildNode* LightTree::recursiveBuild(MemoryArena& arena, std::vector<Li
         start, mid, totalNodes, orderedLights);
     LightTreeBuildNode* r = recursiveBuild(arena, lightsInfo, 
         mid, end, totalNodes, orderedLights);
+    node->InitInternal(dim, l, r);
   }
 
   return node;
 }
 
 int LightTree::flattenTree(LightTreeBuildNode* node, 
-    int *offset, std::vector<std::shared_ptr<Light> >& orderedLights) {
-  LinearLightTreeNode* linearNode = &_nodes[*offset];
+    int& off, std::vector<std::shared_ptr<Light> >& orderedLights) {
+  LinearLightTreeNode* linearNode = &_nodes[off];
   linearNode->power = node->power;
-  int curOffset = *(offset)++;
+  int curOffset = off++;
   if (node->isLeaf()) {
     linearNode->lightsOffset = node->firstLightOffset;
     linearNode->splitAxis = -1;
@@ -191,11 +199,37 @@ int LightTree::flattenTree(LightTreeBuildNode* node,
   } else {
     linearNode->splitAxis = node->splitAxis;
     linearNode->nLight = node->nLights;
-    flattenTree(node->children[0], offset, orderedLights);
-    linearNode->secondChildOffset = flattenTree(node->children[1], offset, orderedLights);
+    flattenTree(node->children[0], off, orderedLights);
+    linearNode->secondChildOffset = flattenTree(node->children[1], off, orderedLights);
   }
 
   return curOffset;
+}
+
+void LightTree::sample(int curOffset, Float u, int& offset, Float& pdf) const {
+  LinearLightTreeNode curNode = _nodes[curOffset];
+  if (curNode.isLeaf()) {
+    int off = static_cast<int>(curNode.nLight * u);
+    int selectedIndex = curNode.lightsOffset + off;
+    Light* light = _lights[selectedIndex].get();
+    offset = selectedIndex;
+    pdf = light->Power().y() / curNode.power;
+  } else {
+    Float pl = _nodes[curOffset+1].power;
+    Float p = pl / curNode.power;
+    if (u < p) {
+      sample(curOffset+1, u/p, offset, pdf);
+      pdf = p * pdf;
+    } else {
+      sample(curNode.secondChildOffset, (1.0f-u)/(1.0f-p), offset, pdf);
+      pdf = (1.0-p) * pdf;
+    }
+  }
+}
+
+std::shared_ptr<Light> LightTree::getLightByIndex(int index) const {
+  CHECK_NE(index, _lights.size());
+  return _lights[index];
 }
 
 std::shared_ptr<LightTree> CreateLightTree(

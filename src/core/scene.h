@@ -39,6 +39,7 @@
 #define PBRT_CORE_SCENE_H
 
 // core/scene.h*
+#include "accelerators/lighttree.h"
 #include "pbrt.h"
 #include "geometry.h"
 #include "primitive.h"
@@ -60,6 +61,8 @@ class Scene {
             if (light->flags & (int)LightFlags::Infinite)
                 infiniteLights.push_back(light);
         }
+
+        lightTree = std::make_shared<LightTree>(lights, 1, LightTree::SplitMethod::Middle);
     }
     const Bounds3f &WorldBound() const { return worldBound; }
     bool Intersect(const Ray &ray, SurfaceInteraction *isect) const;
@@ -72,6 +75,9 @@ class Scene {
     // Store infinite light sources separately for cases where we only want
     // to loop over them.
     std::vector<std::shared_ptr<Light>> infiniteLights;
+
+    // light tree
+    std::shared_ptr<LightTree> lightTree;
 
   private:
     // Scene Private Data
