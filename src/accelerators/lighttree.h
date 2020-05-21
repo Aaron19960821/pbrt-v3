@@ -22,6 +22,7 @@ namespace pbrt {
 
 struct LightInfo;
 struct LightTreeBuildNode;
+struct LinearLightTreeNode;
 
 class LightTree {
   public:
@@ -42,10 +43,14 @@ class LightTree {
         int start, int end, int* totalNodes, 
         std::vector<std::shared_ptr<Light>>&);
 
+    int flattenTree(LightTreeBuildNode* node, int* offset, 
+        std::vector<std::shared_ptr<Light>>&);
+
   private:
     std::vector<std::shared_ptr<Light>> _lights;
     const int _maxLightsPerNode;
     const SplitMethod _splitMethod;
+    LinearLightTreeNode* _nodes;
 };
 
 std::shared_ptr<LightTree> CreateLightTree(
