@@ -83,7 +83,8 @@ struct LightInfo {
     centroid(0.5f*_bound.pMin + 0.5f*_bound.pMax),
     cone(_cone) {}
 
-  LightInfo() {}
+  LightInfo():
+    power(0.0f) {}
 
   size_t lightIndex;
   Bounds3f bound;
@@ -259,7 +260,7 @@ LightTreeBuildNode* LightTree::recursiveBuild(MemoryArena& arena, std::vector<Li
             int minCostSplitBucket = -1;
 
             Float maxLength = bound.Diagonal()[bound.MaximumExtent()];
-            for (int dim_t = 0; dim_t < 3; ++dim) {
+            for (int dim_t = 0; dim_t < 3; ++dim_t) {
               LightInfo buckets[nBuckets];
               for (int i = start; i < end; ++i) {
                 int b = nBuckets * centroidBound.Offset(lightsInfo[i].centroid)[dim_t];
@@ -288,42 +289,40 @@ LightTreeBuildNode* LightTree::recursiveBuild(MemoryArena& arena, std::vector<Li
                 }
 
                 Float cost = k * (power0 * b0.SurfaceArea() * c0.measure() + 
-                    power1 * b1.SurfaceArea() * c1.measure()) / (bound.SurfaceArea() * cone.measure());
+                    power1 * b1.SurfaceArea() * c1.measure()) / (bound.SurfaceArea() * cone.measure() + 1.0f);
 
                 if (cost <  minCost) {
                   minCost = cost;
                   dim = dim_t;
                   minCostSplitBucket = i;
                 }
-
               }
+            }
 
-              Float leafCost = power;
-              if (numLights > _maxLightsPerNode || minCost > leafCost) {
-                LightInfo* lmid = std::partition(&lightsInfo[start], &lightsInfo[end-1]+1,
-                    [=](const LightInfo& a) {
-                      int b = nBuckets * centroidBound.Offset(a.centroid)[dim];
-                      if (b == nBuckets) b--;
-                      CHECK_GE(b, 0);
-                      CHECK_LT(b, nBuckets);
-                      return b <= minCostSplitBucket;
-                    });
-                mid = lmid - &lightsInfo[0];
-              } else {
-                int firstLightOffset = orderedLights.size();
-                for (int i = start; i < end; ++i) {
-                  int lightIndex = lightsInfo[i].lightIndex;
-                  orderedLights.push_back(_lights[lightIndex]);
-                }
-                node->InitLeaf(firstLightOffset, numLights, bound, power);
-                return node; 
+            Float leafCost = power;
+            if (numLights > _maxLightsPerNode || minCost < leafCost) {
+              LightInfo* lmid = std::partition(&lightsInfo[start], &lightsInfo[end-1]+1,
+                  [=](const LightInfo& a) {
+                    int b = nBuckets * centroidBound.Offset(a.centroid)[dim];
+                    if (b == nBuckets) b--;
+                    CHECK_GE(b, 0);
+                    CHECK_LT(b, nBuckets);
+                    return b <= minCostSplitBucket;
+                  });
+              mid = lmid - &lightsInfo[0];
+            } else {
+              int firstLightOffset = orderedLights.size();
+              for (int i = start; i < end; ++i) {
+                int lightIndex = lightsInfo[i].lightIndex;
+                orderedLights.push_back(_lights[lightIndex]);
               }
+              node->InitLeaf(firstLightOffset, numLights, bound, power);
+              return node; 
             }
             break;
           }
         }
     }
-    std::cout << mid << std::endl;
     LightTreeBuildNode* l = recursiveBuild(arena, lightsInfo, 
         start, mid, totalNodes, orderedLights);
     LightTreeBuildNode* r = recursiveBuild(arena, lightsInfo, 
@@ -358,6 +357,9 @@ void LightTree::sample(int curOffset, Float u, int& offset, Float& pdf) const {
   if (curNode.isLeaf()) {
     int off = static_cast<int>(curNode.nLight * u);
     int selectedIndex = curNode.lightsOffset + off;
+    if (curNode.nLight == 1) {
+      selectedIndex = curNode.lightsOffset;
+    }
     Light* light = _lights[selectedIndex].get();
     offset = selectedIndex;
     pdf = light->Power().y() / curNode.power;

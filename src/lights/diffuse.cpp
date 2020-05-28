@@ -136,6 +136,11 @@ Bounds3f DiffuseAreaLight::WorldBound() const {
   return shape->WorldBound();
 }
 
+bool DiffuseAreaLight::GetOrientationAttributes(Vector3f& axis, Float& thetaO, 
+    Float& thetaE) const {
+  return shape->GetOrientationAttributes(axis, thetaO, thetaE);
+}
+
 std::shared_ptr<AreaLight> CreateDiffuseAreaLight(
     const Transform &light2world, const Medium *medium,
     const ParamSet &paramSet, const std::shared_ptr<Shape> &shape) {
