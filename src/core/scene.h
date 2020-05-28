@@ -62,7 +62,7 @@ class Scene {
                 infiniteLights.push_back(light);
         }
 
-        lightTree = std::make_shared<LightTree>(lights, 1, LightTree::SplitMethod::Middle);
+        lightTree = std::make_shared<LightTree>(lights, 1, LightTree::SplitMethod::SAH);
     }
     const Bounds3f &WorldBound() const { return worldBound; }
     bool Intersect(const Ray &ray, SurfaceInteraction *isect) const;

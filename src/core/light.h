@@ -79,6 +79,8 @@ class Light {
                         Float *pdfDir) const = 0;
 
     virtual Bounds3f WorldBound() const;
+    virtual bool GetOrientationAttributes(Vector3f& axis, Float& thetaO,
+        Float& thetaE) const;
 
     // Light Public Data
     const int flags;

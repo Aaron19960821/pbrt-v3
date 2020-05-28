@@ -63,6 +63,7 @@ class SpotLight : public Light {
                 Float *pdfDir) const;
 
     Bounds3f WorldBound() const;
+    bool GetOrientationAttributes(Vector3f& axis, Float& thetaO, Float& thetaE) const;
 
   private:
     // SpotLight Private Data
