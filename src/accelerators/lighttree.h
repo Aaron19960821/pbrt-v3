@@ -24,6 +24,33 @@ struct LightInfo;
 struct LightTreeBuildNode;
 struct LinearLightTreeNode;
 
+class LightCone {
+  public:
+    LightCone();
+    LightCone(const Vector3f&, Float, Float);
+
+    Float measure() const;
+
+    Vector3f axis() const {
+      return _axis;
+    }
+
+    Float thetaO() const {
+      return _thetaO;
+    }
+
+    Float thetaE() const {
+      return _thetaE;
+    }
+
+    static LightCone Union(const LightCone& lc1, const LightCone& lc2);
+
+  private:
+    Vector3f _axis;
+    Float _thetaO;
+    Float _thetaE;
+};
+
 class LightTree {
   public:
     enum class SplitMethod {

@@ -11,7 +11,60 @@
 #include "paramset.h"
 #include "stats.h"
 
+#include <cmath>
+
 namespace pbrt {
+
+LightCone::LightCone():
+  _axis(0.0f, 0.0f, 0.0f),
+  _thetaO(0.0f),
+  _thetaE(0.0f) {}
+
+LightCone::LightCone(const Vector3f& axis, Float thetaO, Float thetaE):
+  _axis(axis),
+  _thetaO(thetaO),
+  _thetaE(thetaE) {}
+
+Float LightCone::measure() const {
+  Float constant = 2.0f * Pi * (1.0f - std::cos(_thetaO));
+
+  Float thetaW = std::min(Pi, _thetaO + _thetaE);
+  Float integrate = 0.5f * Pi * (2 * thetaW * std::sin(_thetaO) - 
+      std::cos(_thetaO-2*thetaW) - 2*_thetaO*std::sin(_thetaO) +
+      std::cos(_thetaO));
+  return constant + integrate;
+}
+
+LightCone LightCone::Union(const LightCone& lc1, 
+    const LightCone& lc2) {
+
+  const LightCone* minLc;
+  const LightCone* maxLc;
+  if (lc1.thetaO() < lc2.thetaO()) {
+    minLc = &lc1;
+    maxLc = &lc2;
+  } else {
+    minLc = &lc2;
+    maxLc = &lc1;
+  }
+
+  Float thetaD = std::acos(Dot(minLc->axis(), maxLc->axis()));
+  Float thetaE = std::max(minLc->thetaE(), maxLc->thetaE());
+
+  if (std::min(thetaD+minLc->thetaO(), Pi) < maxLc->thetaO()) {
+    return LightCone(maxLc->axis(), maxLc->thetaO(), thetaE);
+  } else {
+    Float thetaO = (minLc->thetaO()+maxLc->thetaO()+thetaD) / 2.0f;
+    if (thetaO >= Pi) {
+      return LightCone(maxLc->axis(), Pi, thetaE);
+    }
+
+    Float thetaR = thetaO - maxLc->thetaO();
+    Vector3f pivot = Cross(minLc->axis(), maxLc->axis());
+    Vector3f newAxis = Rotate(Degrees(thetaO - maxLc->thetaO()), pivot)(maxLc->axis());
+    return LightCone(newAxis, thetaO, thetaE);
+  }
+}
 
 struct LightInfo {
   LightInfo(size_t _lightIndex, Bounds3f _bound, Float _power):
